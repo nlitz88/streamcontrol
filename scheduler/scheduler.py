@@ -1,34 +1,68 @@
+from time import sleep
+from datetime import datetime
+import pytz
+from suntime import Sun
+from geopy.geocoders import Nominatim
+
+sleep_interval = 1        # Sleep interval in seconds
+
+# start_queue = {}
+# stop_queue = {}
+
+# Get latitude and longitude of current location.
+geolocator = Nominatim(user_agent="chirp")
+# Setup location (make this configurable via command line arguments).
+address = "pittsburgh pa"
+location = geolocator.geocode(address)
+
+# Extract latitude and longitude.
+latitude = location.latitude
+longitude = location.longitude
+sun = Sun(latitude, longitude)
+
+# Then, get the current date that will be used to compute the sunrise/sunset times.
+current_date = datetime.now().date()
+sun_rise = sun.get_local_sunrise_time(current_date)
+sun_set = sun.get_local_sunset_time(current_date)
+# NOTE: these times are returned in UTC time (No daylight savings time considered, right! We're just concerned with where the Sun is!).
+
+# # Convert these times to configurable time zone. For now, just hardcoded to EST. Just for readability; NOT for utili
+# sun_rise_est = sun_rise.astimezone(pytz.timezone('US/Eastern'))
+# sun_set_est = sun_set.astimezone(pytz.timezone('US/Eastern'))
+# print("Sunrise: ", sun_rise_est.strftime('%H:%M'))
+# print("Sunset: ", sun_set_est.strftime('%H:%M'))
+
+# Store the last date.
+last_date = datetime.now().date()
+
+while(True):
+
+    # Get current_time as time object.
+    current_date = datetime.now().date()
+    # Check if it's a new day. If so, update last_date, and get sunset/sunrise times.
+    if(current_date != last_date):
+        # Set the new last_date.
+        last_date = current_date
+        # Update the sun_rise and sun_set times for this new day.
+        sun_rise = sun.get_local_sunrise_time(current_date)
+        sun_set = sun.get_local_sunset_time(current_date)
+
+    # Now, get the current time and determine if an action needs to be taken.
+    current_time = datetime.now().time()
 
 
+    ## NOTE: NEED TO ADD THE CONDITION THAT THE STREAM ISN'T ALREADY STARTED!!! (EITHER POLL OBS OR SET A VARIABLE?)
+    if(current_time >= sun_rise.time() and current_time < sun_set.time()):
 
+        # Start the stream!
+        print("Time: xxxx Starting the stream!")
+    
+    elif(current_time >= sun_set.time()):
+        # STOP THE STREAM
+        print("Stopping the stream!")
 
-# Essentially, I just want this to be a simple script that contacts some sort of time server to determine the sunset time every day, or use a library call
-# that references some sort of stored calendar (as this should be something that is predictable, at least roughly. This needn't be exact).
+    # Otherwise, do nothing!
+    else:
+        print("Nothing to do. Stream Status: ??")
 
-# Also, basically want this to act like a daemon. At every interval of time, just check to see if the current time is the next designated time.
-
-# As far as the stream scheduler goes, while I don't think this needs to be very complex, I think a cool way to design would be to include stream_intervals.
-# That is, when you run the service, you call the script with multiple start, end times, 
-
-# OR just keep it simple to start: make it poll for the current time.
-# if it's a new day, then go get the sunset/sunrise time for that day.
-# Then, if the time is the sunrise time, turn on the stream.
-# If the time is the sunset time, turn off the stream.
-# Otherwise, don't do anything.
-
-# This can be generalized to:
-# If the current time is nearest time (start point at the top of the start point stack) then start the stream.
-# If the current time is the nearest stop time (stop time at the top of the stop time stack) then stop the stream.
-
-# If they provide sunrise:sunset as a range, then it'll add the time of sunrise to the startpoint stack and the sunset time to the stoppoint stack.
-
-# It would be expected that the user does not overlap time intervals; otherwise, this would result in the stream ending prematurely, or other undefined behavior.
-# The user would define the start and stop times for every day in arguments for running the script, either in the form of arguments or a file, with intervals
-# on each line like: 
-# 2:00-3:00,
-# sunrise-sunset,
-# 23:00-23:30
-
-
-# AND, don't even necessarily have to set this up to be an infinite loop; could just use the built in linux timer feature from systemd. However, that
-# would kind of make it impossible to use on Windows right out of the box.
+    sleep(sleep_interval)
