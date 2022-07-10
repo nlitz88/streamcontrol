@@ -5,6 +5,7 @@ This module is a collection of functions to abstract away the interaction with t
 using the simpleobsws package.
 """
 
+from multiprocessing.connection import wait
 import simpleobsws
 import asyncio
 import json
@@ -21,22 +22,25 @@ wsclient = simpleobsws.WebSocketClient(url = 'ws://localhost:4455', password = '
 async def make_request(request: simpleobsws.Request):
     await wsclient.connect() # Make the connection to obs-websocket
     await wsclient.wait_until_identified() # Wait for the identification handshake to complete
-
-    request = simpleobsws.Request('GetVersion') # Build a Request object
-
     response = await wsclient.call(request) # Perform the request
-    if response.ok(): # Check if the request succeeded
-        print("Request succeeded! Response data:")
-        print(json.dumps(response.responseData, indent=2))
-
     await wsclient.disconnect() # Disconnect from the websocket server cleanly
+    return response
 
-def switch_scene(new_scene):
+# Function to switch the current program scene in OBS. Uses "make_request" to actually perform the request.
+# Functions like this are just wrappers for different types of actions.
+async def switch_scene(new_scene):
     """Switch to provided scene with with name new_scene"""
-    pass
 
+    request = simpleobsws.Request("SetCurrentProgramScene", {
+        "sceneName": new_scene
+    })
+    response = await make_request(request)
+    if response.ok(): # Check if the request succeeded
+        print(f"Request succeeded! Switched to {new_scene}")
+    else:
+        print(f"Request to switch to {new_scene} failed!")
 
 if __name__ == "__main__":
     # Temporary for testing.
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(make_request(None)) 
+    loop.run_until_complete(switch_scene("Scene2"))
