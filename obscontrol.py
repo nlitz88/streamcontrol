@@ -40,7 +40,41 @@ async def switch_scene(new_scene):
     else:
         print(f"Request to switch to {new_scene} failed!")
 
+async def get_stream_status() -> dict:
+    """Returns the stream status. Returns response dictionary, returns None on failure."""
+    request = simpleobsws.Request("GetStreamStatus")
+    response = await make_request(request)
+    if response.ok():
+        print(f"Request to get stream status succeeded.")
+        return response.responseData
+    else:
+        print(f"Request to get stream status failed.")
+        return None
+
+async def start_stream():
+    """Sends a request to start the stream."""
+    request = simpleobsws.Request("StartStream")
+    response = await make_request(request)
+    if response.ok():
+        print(f"Request to start the stream succeeded!")
+    else:
+        print(f"Request to start the stream failed.")
+
+async def stop_stream():
+    """Sends a request to stop the stream."""
+    request = simpleobsws.Request("StopStream")
+    response = await make_request(request)
+    if response.ok():
+        print(f"Request to stop the stream succeeded!")
+    else:
+        print(f"Request to stop the stream failed.")
+    
+async def main():
+    resp = await get_stream_status()
+    # print(json.dumps(resp, indent=2))
+    await start_stream()
+
 if __name__ == "__main__":
     # Temporary for testing.
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(switch_scene("Scene2"))
+    loop.run_until_complete(main())
